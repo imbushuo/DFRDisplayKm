@@ -51,17 +51,6 @@ EVT_WDF_DEVICE_D0_ENTRY DFRDisplayEvtDeviceD0Entry;
 EVT_WDF_DEVICE_D0_EXIT DFRDisplayEvtDeviceD0Exit;
 
 //
-// IOCTL handler
-//
-NTSTATUS
-DFRDisplayUpdateFrameBuffer(
-	_In_ WDFREQUEST Request,
-	_In_ WDFDEVICE Device,
-	_In_ size_t InputBufferLength,
-	_Out_ BOOLEAN *RequestPending
-);
-
-//
 // Functions for USB transfer
 //
 NTSTATUS
@@ -85,6 +74,10 @@ DFRDisplaySendGenericRequestAndForget(
 	_In_ UINT32 RequestKey
 );
 
+//
+// Functions for screen FrameBuffer
+//
+
 NTSTATUS
 DFRDisplayTransferFrameBuffer(
 	_In_ WDFDEVICE Device,
@@ -99,6 +92,14 @@ DFRDisplayTransferFrameBuffer(
 NTSTATUS
 DFRDisplayClear(
 	_In_ WDFDEVICE Device
+);
+
+NTSTATUS
+DFRDisplayHandleUsermodeBufferTransfer(
+	_In_ WDFDEVICE Device,
+	_In_ WDFREQUEST Request,
+	_In_ size_t InputBufferLength,
+	_Out_ BOOLEAN* RequestPending
 );
 
 //

@@ -53,15 +53,21 @@ DFRDisplayKmEvtIoDeviceControl(
     )
 {
 	UNREFERENCED_PARAMETER(Queue);
-	UNREFERENCED_PARAMETER(InputBufferLength);
 	UNREFERENCED_PARAMETER(OutputBufferLength);
 
 	NTSTATUS Status;
-	// WDFDEVICE Device = WdfIoQueueGetDevice(Queue);
+	WDFDEVICE Device = WdfIoQueueGetDevice(Queue);
 	BOOLEAN RequestPending = FALSE;
 
 	switch (IoControlCode) {
 	case IOCTL_DFR_UPDATE_FRAMEBUFFER:
+		Status = DFRDisplayHandleUsermodeBufferTransfer(
+			Device,
+			Request,
+			InputBufferLength,
+			&RequestPending
+		);
+		break;
 	default:
 		Status = STATUS_NOT_SUPPORTED;
 		break;

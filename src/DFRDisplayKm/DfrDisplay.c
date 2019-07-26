@@ -35,7 +35,8 @@ DFRDisplayClear(
 		goto exit;
 	}
 
-	FrameBufferLength = (size_t) pDeviceContext->Width * pDeviceContext->Height * 3;
+	FrameBufferLength = (size_t) pDeviceContext->Width * 
+		pDeviceContext->Height * DFR_FRAMEBUFFER_PIXEL_BYTES;
 	Status = WdfMemoryCreate(
 		WDF_NO_OBJECT_ATTRIBUTES,
 		NonPagedPool,
@@ -196,5 +197,145 @@ exit:
 	if (NULL != RequestMemory) {
 		WdfObjectDelete(RequestMemory);
 	}
+	return Status;
+}
+
+NTSTATUS
+DFRDisplayHandleUsermodeBufferTransfer(
+	_In_ WDFDEVICE Device,
+	_In_ WDFREQUEST Request,
+	_In_ size_t InputBufferLength,
+	_Out_ BOOLEAN *RequestPending
+)
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
+
+	WDFMEMORY InputMemory;
+	PUCHAR InputBuffer = NULL;
+	size_t InputBufferSize;
+
+	PDFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER HostFbUpdateRequestHeader;
+	size_t FrameBufferLength;
+
+	// By default not make request pending
+	// TODO: Implement async BLT later
+	*RequestPending = FALSE;
+
+	// Check device status
+	if (FALSE == pDeviceContext->DeviceReady) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"Device is not yet ready"
+		);
+		Status = STATUS_DEVICE_NOT_READY;
+		goto exit;
+	}
+
+	// Absolutely not expect such request below:
+	if (sizeof(DFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER) >= InputBufferLength) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"DFRDisplayUpdateFrameBuffer received invalid buffer length %lld",
+			InputBufferLength
+		);
+
+		Status = STATUS_DATA_ERROR;
+		goto exit;
+	}
+
+	// Retrieve IOCTL input
+	Status = WdfRequestRetrieveInputMemory(
+		Request,
+		&InputMemory
+	);
+
+	if (!NT_SUCCESS(Status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"WdfRequestRetrieveInputMemory failed with %!STATUS!",
+			Status
+		);
+		goto exit;
+	}
+
+	InputBuffer = WdfMemoryGetBuffer(
+		InputMemory,
+		&InputBufferSize
+	);
+
+	if (NULL == InputBuffer) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"WdfMemoryGetBuffer failed: InputBuffer == NULL"
+		);
+		goto exit;
+	}
+
+	HostFbUpdateRequestHeader = (PDFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER) InputBuffer;
+
+	// Validate region
+	if (HostFbUpdateRequestHeader->BeginX >= pDeviceContext->Width ||
+		HostFbUpdateRequestHeader->BeginY >= pDeviceContext->Height) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"FrameBuffer Request out of screen boundary, start (%d, %d)",
+			HostFbUpdateRequestHeader->BeginX,
+			HostFbUpdateRequestHeader->BeginY
+		);
+		Status = STATUS_INVALID_PARAMETER;
+		goto exit;
+	}
+
+	if (HostFbUpdateRequestHeader->BeginX + HostFbUpdateRequestHeader->Width > pDeviceContext->Width ||
+		HostFbUpdateRequestHeader->BeginY + HostFbUpdateRequestHeader->Height > pDeviceContext->Height) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"FrameBuffer Request out of screen boundary, end (%d, %d)",
+			HostFbUpdateRequestHeader->BeginX + HostFbUpdateRequestHeader->Width,
+			HostFbUpdateRequestHeader->BeginY + HostFbUpdateRequestHeader->Height
+		);
+		Status = STATUS_INVALID_PARAMETER;
+		goto exit;
+	}
+
+	// Validate Pixel format
+	if (HostFbUpdateRequestHeader->FrameBufferPixelFormat != pDeviceContext->FrameBufferPixelFormat) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"FrameBuffer has unsupported pixel format %d",
+			HostFbUpdateRequestHeader->FrameBufferPixelFormat
+		);
+		Status = STATUS_INVALID_PARAMETER;
+		goto exit;
+	}
+
+	// Not yet support vertical flip
+	// TODO: Implement vertical flip
+	if (HostFbUpdateRequestHeader->RequireVertFlip) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"Vert Flip is not yet implemented"
+		);
+		Status = STATUS_NOT_IMPLEMENTED;
+		goto exit;
+	}
+
+	// Validate size
+	FrameBufferLength = (size_t) HostFbUpdateRequestHeader->Width * 
+		HostFbUpdateRequestHeader->Height * DFR_FRAMEBUFFER_PIXEL_BYTES;
+	if (FrameBufferLength + sizeof(DFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER) > InputBufferLength) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"DFRDisplayUpdateFrameBuffer received invalid buffer length %lld",
+			InputBufferLength);
+
+		Status = STATUS_DATA_ERROR;
+		goto exit;
+	}
+
+	// Transfer FrameBuffer
+	Status = DFRDisplayTransferFrameBuffer(
+		Device,
+		HostFbUpdateRequestHeader->BeginX,
+		HostFbUpdateRequestHeader->BeginY,
+		HostFbUpdateRequestHeader->Width,
+		HostFbUpdateRequestHeader->Height,
+		(PVOID)(InputBuffer + sizeof(DFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER)),
+		FrameBufferLength
+	);
+
+exit:
 	return Status;
 }

@@ -13,6 +13,7 @@
 #define DFR_CLEAR_SCREEN_KEY 0x434c4452 // CLDR
 
 #define DFR_FRAMEBUFFER_FORMAT 0x52474241 // ABGR, Actually Alpha does not transmit
+#define DFR_FRAMEBUFFER_PIXEL_BYTES 3
 
 #define DFR_INIT_GINF_RETRY_MAX 100
 
