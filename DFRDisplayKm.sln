@@ -9,12 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DFRDisplayKm", "src\DFRDisp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{28FF7B7B-B600-46BD-AB24-8D8C9A054618}"
 	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
 		README.md = README.md
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{59598C2B-9E48-4152-BC06-5B615B949DF7}"
-	ProjectSection(SolutionItems) = preProject
-		LICENSE.txt = LICENSE.txt
 	EndProjectSection
 EndProject
 Global
