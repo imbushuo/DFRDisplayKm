@@ -8,6 +8,8 @@ easy since it is a HID device.
 
 Keep myself busy during the last few weeks of my internship (thank you LinkedIn & Microsoft)
 
+~~I should register this project to //oneweek/ next time~~
+
 ## Installation
 
 No official signed binary will be built at this moment. To build the driver, a
