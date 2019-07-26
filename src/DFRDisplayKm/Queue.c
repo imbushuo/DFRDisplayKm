@@ -68,6 +68,11 @@ DFRDisplayKmEvtIoDeviceControl(
 			&RequestPending
 		);
 		break;
+	case IOCTL_DFR_CLEAR_FRAMEBUFFER:
+		Status = DFRDisplayClear(
+			Device
+		);
+		break;
 	default:
 		Status = STATUS_NOT_SUPPORTED;
 		break;

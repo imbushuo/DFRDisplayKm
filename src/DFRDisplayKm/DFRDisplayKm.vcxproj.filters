@@ -58,9 +58,6 @@
     <ClInclude Include="include\DFRHostIo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\DFRHostIoctl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>

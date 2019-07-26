@@ -6,6 +6,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
     class DfrHostIo
     {
         public const uint IOCTL_DFR_UPDATE_FRAMEBUFFER = 0x8086a004;
+        public const uint IOCTL_DFR_CLEAR_FRAMEBUFFER = 0x8086a008;
         public const uint DFR_FRAMEBUFFER_FORMAT = 0x52474241;
     }
 

@@ -420,7 +420,6 @@
     <ClInclude Include="include\Device.h" />
     <ClInclude Include="include\Dfr.h" />
     <ClInclude Include="include\DFRHostIo.h" />
-    <ClInclude Include="include\DFRHostIoctl.h" />
     <ClInclude Include="include\Driver.h" />
     <ClInclude Include="include\Public.h" />
     <ClInclude Include="include\Queue.h" />

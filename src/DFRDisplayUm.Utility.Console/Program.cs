@@ -8,65 +8,33 @@ namespace DFRDisplayUm.Utility.Console
 {
     class Program
     {
-        unsafe static void Main(string[] args)
+        static bool ClearDfrFrameBuffer(IntPtr deviceHandle)
         {
-            if (args.Length < 1)
-            {
-                System.Console.WriteLine("Usage: DFRDisplayUm.Utility.Console.exe [Image Path] [X] [Y]");
-                System.Console.WriteLine("Image should have size less than 2170 * 60 or it will be rejected by the DFR driver.");
-                System.Console.WriteLine("X and Y axis is optional.");
-                return;
-            }
-
-            // Find DFR Device
-            var instancePath = DfrDeviceDiscovery.FindDfrDevice();
-            if (string.IsNullOrEmpty(instancePath))
-            {
-                System.Console.WriteLine("No DFR device found");
-                return;
-            }
-
-            System.Console.WriteLine($"Found DFR instance {instancePath}");
-            var deviceHandle = IoCtl.CreateFile(
-                instancePath, FileAccess.Write, FileShare.None,
-                IntPtr.Zero, FileMode.Open, FileOptions.None,
+            return IoCtl.DeviceIoControl(
+                deviceHandle,
+                DfrHostIo.IOCTL_DFR_CLEAR_FRAMEBUFFER,
+                IntPtr.Zero,
+                0,
+                IntPtr.Zero,
+                0,
+                IntPtr.Zero,
                 IntPtr.Zero
             );
+        }
 
-            if (deviceHandle == IntPtr.Zero)
-            {
-                System.Console.WriteLine("Failed to open DFR device");
-                return;
-            }
-
-            ushort x = 0, y = 0, width = 0, height = 0;
-
-            // Optional X
-            if (args.Length >= 2)
-            {
-                if (ushort.TryParse(args[1], out ushort tX))
-                {
-                    x = tX;
-                }
-            }
-
-            // Optional Y
-            if (args.Length >= 3)
-            {
-                if (ushort.TryParse(args[2], out ushort tY))
-                {
-                    y = tY;
-                }
-            }
+        static unsafe bool DrawBitmap(IntPtr deviceHandle, string file, ushort x, ushort y)
+        {
+            ushort width = 0, height = 0;
+            var bResult = false;
 
             try
             {
-                using (var bitmap = new Bitmap(args[0]))
+                using (var bitmap = new Bitmap(file))
                 {
                     if (bitmap.Width > ushort.MaxValue || bitmap.Height > ushort.MaxValue)
                     {
                         System.Console.Write("Image too large");
-                        return;
+                        return false;
                     }
 
                     width = (ushort)bitmap.Width;
@@ -80,7 +48,7 @@ namespace DFRDisplayUm.Utility.Console
                     if (requestPtr == IntPtr.Zero)
                     {
                         System.Console.Write("Failed to allocate memory for FrameBuffer");
-                        return;
+                        return false;
                     }
 
                     byte* requestBytePtr = (byte*)requestPtr.ToPointer();
@@ -108,7 +76,7 @@ namespace DFRDisplayUm.Utility.Console
 
                         binaryWriter.Flush();
 
-                        var result = IoCtl.DeviceIoControl(
+                        bResult = IoCtl.DeviceIoControl(
                             deviceHandle,
                             DfrHostIo.IOCTL_DFR_UPDATE_FRAMEBUFFER,
                             requestPtr,
@@ -118,15 +86,6 @@ namespace DFRDisplayUm.Utility.Console
                             IntPtr.Zero,
                             IntPtr.Zero
                         );
-
-                        if (!result)
-                        {
-                            System.Console.WriteLine("IOCTL to DFR failed");
-                        }
-                        else
-                        {
-                            System.Console.WriteLine("FrameBuffer copied");
-                        }
                     }
 
                     Marshal.FreeHGlobal(requestPtr);
@@ -134,7 +93,89 @@ namespace DFRDisplayUm.Utility.Console
             }
             catch (Exception exc)
             {
-                System.Console.Write($"Failed to open file: {exc}");
+                System.Console.Write($"Exception caught: {exc}");
+            }
+
+            return bResult;
+        }
+
+        static void ShowHelp()
+        {
+            System.Console.WriteLine("Usage: DFRDisplayUm.Utility.Console.exe [Action] [Image Path] [X] [Y]");
+            System.Console.WriteLine("Available Actions: clear draw");
+            System.Console.WriteLine();
+            System.Console.WriteLine("Action draw:");
+            System.Console.WriteLine("Image should have size less than 2170 * 60 or it will be rejected by the DFR driver.");
+            System.Console.WriteLine("X and Y axis is optional.");
+        }
+
+        unsafe static void Main(string[] args)
+        {
+            if (args.Length < 1)
+            {
+                ShowHelp();
+                return;
+            }
+
+            // Find DFR Device
+            var instancePath = DfrDeviceDiscovery.FindDfrDevice();
+            if (string.IsNullOrEmpty(instancePath))
+            {
+                System.Console.WriteLine("No DFR device found");
+                return;
+            }
+
+            System.Console.WriteLine($"Found DFR instance {instancePath}");
+            var deviceHandle = IoCtl.CreateFile(
+                instancePath, FileAccess.Write, FileShare.None,
+                IntPtr.Zero, FileMode.Open, FileOptions.None,
+                IntPtr.Zero
+            );
+
+            if (deviceHandle == IntPtr.Zero)
+            {
+                System.Console.WriteLine("Failed to open DFR device");
+                return;
+            }
+
+            bool bResult = false;
+            bool commandFound = true;
+            switch (args[0].ToLowerInvariant())
+            {
+                case "clear":
+                    bResult = ClearDfrFrameBuffer(deviceHandle);
+                    break;
+                case "draw":
+                    ushort x = 0, y = 0;
+                    // Optional X
+                    if (args.Length >= 3)
+                    {
+                        if (ushort.TryParse(args[2], out ushort tX))
+                        {
+                            x = tX;
+                        }
+                    }
+
+                    // Optional Y
+                    if (args.Length >= 4)
+                    {
+                        if (ushort.TryParse(args[3], out ushort tY))
+                        {
+                            y = tY;
+                        }
+                    }
+
+                    bResult = DrawBitmap(deviceHandle, args[1], x, y);
+                    break;
+                default:
+                    ShowHelp();
+                    commandFound = false;
+                    break;
+            }
+
+            if (!bResult && commandFound)
+            {
+                System.Console.WriteLine("Failed to run the command");
             }
 
             IoCtl.CloseHandle(deviceHandle);
