@@ -14,6 +14,8 @@
 
 #define DFR_FRAMEBUFFER_FORMAT 0x52474241 // ABGR, Actually Alpha does not transmit
 
+#define DFR_INIT_GINF_RETRY_MAX 100
+
 #pragma pack(push)
 #pragma pack(1)
 typedef struct _DFR_GENERIC_REQUEST_HEADER {
@@ -62,6 +64,5 @@ typedef struct _DFR_INFORMATION_RESPONSE {
 	UINT32 Height;
 	UCHAR  Reserved5[13];
 	UINT32 PixelFormat;
-	UCHAR  Reserved6[8];
 } DFR_INFORMATION, *PDFR_INFORMATION;
 #pragma pack(pop)

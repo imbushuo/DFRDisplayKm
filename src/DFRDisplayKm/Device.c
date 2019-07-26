@@ -208,6 +208,7 @@ DFRDisplayEvtDeviceD0Entry(
 
 	DFR_INFORMATION DfrInformation;	
 	ULONG PipeBytesTransferrred = 0;
+	ULONG RetryCount = 0;
 
 	PDEVICE_CONTEXT pDeviceContext;
 
@@ -265,6 +266,7 @@ DFRDisplayEvtDeviceD0Entry(
 		goto exit;
 	}
 
+get_info:
 	RtlZeroMemory(&DfrInformation, sizeof(DfrInformation));
 	PipeBytesTransferrred = 0;
 
@@ -284,13 +286,24 @@ DFRDisplayEvtDeviceD0Entry(
 		goto exit;
 	}
 
+	// This could fail - because it is not quite ready
+	// Just go ahead and retry - it should up later
 	if (PipeBytesTransferrred < sizeof(DfrInformation)) {
-		TraceEvents(
-			TRACE_LEVEL_ERROR, TRACE_DRIVER,
-			"%!FUNC! DFRDisplayGetBufferSynchronously buffer too small for GINF"
-		);
-		Status = STATUS_DEVICE_DATA_ERROR;
-		goto exit;
+		if (RetryCount < DFR_INIT_GINF_RETRY_MAX) {
+			TraceEvents(
+				TRACE_LEVEL_WARNING, TRACE_DRIVER,
+				"%!FUNC! DFRDisplayGetBufferSynchronously buffer too small for GINF, entry retry."
+			);
+			RetryCount++;
+			goto get_info;
+		} else {
+			TraceEvents(
+				TRACE_LEVEL_ERROR, TRACE_DRIVER,
+				"%!FUNC! DFRDisplayGetBufferSynchronously buffer too small for GINF"
+			);
+			Status = STATUS_DEVICE_DATA_ERROR;
+			goto exit;
+		}
 	}
 
 	if (DFR_DEVICE_RESPONSE_HEADER != DfrInformation.ResponseHeader ||
@@ -331,7 +344,9 @@ DFRDisplayEvtDeviceD0Entry(
 		goto exit;
 	}
 
-	// Clear Display content
+	// This command is intended to clear the display
+	// But I found that it doesn't quite work
+	// Sent anyway as macOS did so
 	Status = DFRDisplaySendGenericRequestAndForget(
 		pDeviceContext,
 		DFR_CLEAR_SCREEN_KEY
