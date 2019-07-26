@@ -45,7 +45,7 @@ DFRDisplayKmCreateDevice(
         deviceContext = DeviceGetContext(device);
 
 		KeQueryPerformanceCounter(&PerfCounter);
-		deviceContext->CurrentFrameId = (PerfCounter.QuadPart >> 32);
+		deviceContext->CurrentFrameId = (((PerfCounter.QuadPart >> 32) >> 16) >> 8);
 		deviceContext->DeviceReady = FALSE;
 
         //

@@ -103,7 +103,10 @@ DFRDisplayTransferFrameBuffer(
 	WDF_MEMORY_DESCRIPTOR RequestMemoryDescriptor;
 
 	WDF_REQUEST_SEND_OPTIONS RequestOption;
-	ULONG BytesWritten;
+	ULONG BytesTransferrred;
+
+	DFR_FRAMEBUFFER_UPDATE_RESPONSE DfrUpdateResponse;
+	UINT8 RetransmitCount = 0;
 
 	// Check device status
 	if (FALSE == pDeviceContext->DeviceReady) {
@@ -140,8 +143,9 @@ DFRDisplayTransferFrameBuffer(
 	FbUpdateRequest->Header.Reserved1 = DFR_DEVICE_UPDATE_FB_REQUEST_RSVD_VALUE_1;
 	FbUpdateRequest->Header.RequestLength = (UINT32) RequestBufferLength - sizeof(DFR_GENERIC_REQUEST_HEADER);
 
-	if (pDeviceContext->CurrentFrameId >= 0xffffffff) {
-		pDeviceContext->CurrentFrameId = 0x00000000;
+	FbUpdateRequest->Content.Reserved0 = DFR_DEVICE_UPDATE_FB_CONTENT_RSVD_VALUE_0;
+	if (pDeviceContext->CurrentFrameId >= 0xff) {
+		pDeviceContext->CurrentFrameId = 0x00;
 	}
 
 	FbUpdateRequest->Content.BeginX = BeginPosX;
@@ -176,13 +180,14 @@ DFRDisplayTransferFrameBuffer(
 		WDF_REQUEST_SEND_OPTION_TIMEOUT
 	);
 
+retry:
 	RequestOption.Timeout = -1000000;
 	Status = WdfUsbTargetPipeWriteSynchronously(
 		pDeviceContext->BulkPipeOut,
 		NULL,
 		&RequestOption,
 		&RequestMemoryDescriptor,
-		&BytesWritten
+		&BytesTransferrred
 	);
 
 	if (!NT_SUCCESS(Status)) {
@@ -191,6 +196,42 @@ DFRDisplayTransferFrameBuffer(
 			Status
 		);
 		goto exit;
+	}
+
+	RtlZeroMemory(&DfrUpdateResponse, sizeof(DfrUpdateResponse));
+	Status = DFRDisplayGetBufferSynchronously(
+		pDeviceContext,
+		&DfrUpdateResponse,
+		sizeof(DfrUpdateResponse),
+		&BytesTransferrred
+	);
+
+	if (!NT_SUCCESS(Status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"DFRDisplayGetBufferSynchronously failed with %!STATUS!",
+			Status
+		);
+		goto exit;
+	}
+
+	if (DFR_FRAMEBUFFER_UPDATED_KEY != DfrUpdateResponse.FrameId ||
+		FbUpdateRequest->Content.FrameId != DfrUpdateResponse.FrameId) {
+		if (DFR_FB_UPDATE_RETRANSMIT_MAX > RetransmitCount) {
+			TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_DFRDISP,
+				"Retransmit frame %d",
+				FbUpdateRequest->Content.FrameId
+			);
+
+			RetransmitCount++;
+			goto retry;
+		} else {
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+				"Retransmit timed out"
+			);
+
+			Status = STATUS_TIMEOUT;
+			goto exit;
+		}
 	}
 
 exit:

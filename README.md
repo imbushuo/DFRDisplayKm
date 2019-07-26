@@ -33,8 +33,8 @@ Check the badly-written user-mode application example `DFRDisplayUm.Utility.Cons
 
 * Only Apple T2-based MacBook Pro(s) are supported. I assume T1 support is similar but I don't have device to test.
 * The driver might fails to load on T2 cold boot. Reboot the computer once and it should work.
-* FrameBuffer update results are not currently checked (can be retrieved using bulk in message and key `UDCL`). So FrameBuffer update could possibly fail because no retry is implemented.
-* Because `UDCL` check is not implemented, the USB endpoint might stall after a bunch of DFR IOCTLs.
+* `UDCL` read acknowledgement is implemented, but I have not yet intensively tested.
+* FrameBuffer update/clear are synchronous calls.
 
 ## License
 
