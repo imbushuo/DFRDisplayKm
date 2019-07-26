@@ -12,8 +12,73 @@ const UCHAR DfrUpdatePadding[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+
+NTSTATUS
+DFRDisplayClear(
+	_In_ WDFDEVICE Device
+)
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
+
+	WDFMEMORY FrameBufferMemory = NULL;
+	PUCHAR FrameBuffer;
+	size_t FrameBufferLength;
+
+	if (FALSE == pDeviceContext->DeviceReady) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"Device is not yet ready"
+		);
+		Status = STATUS_DEVICE_NOT_READY;
+		goto exit;
+	}
+
+	FrameBufferLength = (size_t) pDeviceContext->Width * pDeviceContext->Height * 3;
+	Status = WdfMemoryCreate(
+		WDF_NO_OBJECT_ATTRIBUTES,
+		NonPagedPool,
+		POOL_TAG,
+		FrameBufferLength,
+		&FrameBufferMemory,
+		&FrameBuffer
+	);
+
+	if (!NT_SUCCESS(Status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"WdfMemoryCreate failed with %!STATUS!",
+			Status
+		);
+		goto exit;
+	}
+
+	// So it should be all black
+	RtlZeroMemory(FrameBuffer, FrameBufferLength);
+	Status = DFRDisplayTransferFrameBuffer(
+		Device,
+		0,
+		0,
+		pDeviceContext->Width,
+		pDeviceContext->Height,
+		FrameBuffer,
+		FrameBufferLength
+	);
+
+	if (!NT_SUCCESS(Status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_DFRDISP,
+			"DFRDisplayTransferFrameBuffer failed with %!STATUS!",
+			Status
+		);
+		goto exit;
+	}
+
+exit:
+	if (NULL != FrameBufferMemory) {
+		WdfObjectDelete(FrameBufferMemory);
+	}
+	return Status;
+}
 
 NTSTATUS
 DFRDisplayTransferFrameBuffer(

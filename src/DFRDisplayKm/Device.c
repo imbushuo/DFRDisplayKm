@@ -364,6 +364,9 @@ get_info:
 	// The iBridge Display is now ready to receive FrameBuffer updates.
 	pDeviceContext->DeviceReady = TRUE;
 
+	// Clear the FrameBuffer
+	Status = DFRDisplayClear(Device);
+
 exit:
 	return Status;
 }

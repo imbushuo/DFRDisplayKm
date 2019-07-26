@@ -96,6 +96,11 @@ DFRDisplayTransferFrameBuffer(
 	_In_ size_t FrameBufferLength
 );
 
+NTSTATUS
+DFRDisplayClear(
+	_In_ WDFDEVICE Device
+);
+
 //
 // Functions to support debug & diagnostics
 //
