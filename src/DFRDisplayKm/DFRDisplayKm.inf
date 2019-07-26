@@ -1,0 +1,87 @@
+;
+; DFRDisplayKm.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=USBDevice
+ClassGuid={88BAE032-5A81-49f0-BC3D-A4FF138216D6}
+Provider=%ManufacturerName%
+CatalogFile=DFRDisplayKm.cat
+DriverVer=
+
+[DestinationDirs]
+DefaultDestDir = 12
+DFRDisplayKm_Device_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+DFRDisplayKm.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%DFRDisplayKm.DeviceDesc%=DFRDisplayKm_Device, USB\VID_05AC&PID_8302&MI_01
+
+[DFRDisplayKm_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+DFRDisplayKm.sys
+
+[DFRDisplayKm_Device.NT.HW]
+AddReg=DFRDisplayKm_AddReg
+
+[DFRDisplayKm_AddReg]
+; By default, USBDevice class uses iProduct descriptor to name the device in
+; Device Manager on Windows 8 and higher.
+; Uncomment for this device to use %DeviceName% on Windows 8 and higher:
+;HKR,,FriendlyName,,%DFRDisplayKm.DeviceDesc%
+
+;-------------- Service installation
+[DFRDisplayKm_Device.NT.Services]
+AddService = DFRDisplayKm,%SPSVCINST_ASSOCSERVICE%, DFRDisplayKm_Service_Inst
+
+; -------------- DFRDisplayKm driver install sections
+[DFRDisplayKm_Service_Inst]
+DisplayName    = %DFRDisplayKm.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\DFRDisplayKm.sys
+
+;
+;--- DFRDisplayKm_Device Coinstaller installation ------
+;
+
+[DFRDisplayKm_Device.NT.CoInstallers]
+AddReg=DFRDisplayKm_Device_CoInstaller_AddReg
+CopyFiles=DFRDisplayKm_Device_CoInstaller_CopyFiles
+
+[DFRDisplayKm_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[DFRDisplayKm_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[DFRDisplayKm_Device.NT.Wdf]
+KmdfService =  DFRDisplayKm, DFRDisplayKm_wdfsect
+[DFRDisplayKm_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Bingxing Wang" ;TODO: Replace with your manufacturer name
+ClassName="Universal Serial Bus devices"
+DiskName = "iBridge Display Installation Disk"
+DFRDisplayKm.DeviceDesc = "iBridge Display Device"
+DFRDisplayKm.SVCDESC = "iBridge Display Service"
+REG_MULTI_SZ = 0x00010000
