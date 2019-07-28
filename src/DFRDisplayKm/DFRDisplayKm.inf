@@ -30,6 +30,7 @@ WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with
 
 [Standard.NT$ARCH$]
 %DFRDisplayKm.DeviceDesc%=DFRDisplayKm_Device, USB\VID_05AC&PID_8302&MI_01
+%DFRDisplayKm.DeviceDesc%=DFRDisplayKm_Device, USB\VID_05AC&PID_8600&MI_01
 
 [DFRDisplayKm_Device.NT]
 CopyFiles=Drivers_Dir

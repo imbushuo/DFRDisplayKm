@@ -181,7 +181,7 @@ DFRDisplayTransferFrameBuffer(
 	);
 
 retry:
-	RequestOption.Timeout = -1000000;
+	RequestOption.Timeout = -3000000;
 	Status = WdfUsbTargetPipeWriteSynchronously(
 		pDeviceContext->BulkPipeOut,
 		NULL,

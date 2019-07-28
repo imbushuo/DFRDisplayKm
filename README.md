@@ -31,7 +31,7 @@ Check the badly-written user-mode application example `DFRDisplayUm.Utility.Cons
 
 ## Known Caveats
 
-* Only Apple T2-based MacBook Pro(s) are supported. I assume T1 support is similar but I don't have device to test.
+* Only Apple T2-based MacBook Pro(s) are confirmed supported. T1 support is added but not yet tested.
 * The driver might fails to load on T2 cold boot. Reboot the computer once and it should work.
 * `UDCL` read acknowledgement is implemented, but I have not yet intensively tested.
 * FrameBuffer update/clear are synchronous calls.
