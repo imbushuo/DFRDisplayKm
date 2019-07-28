@@ -2,9 +2,9 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace DFRDisplayUm.Utility.Console.Interop
+namespace DFRDisplayUm.Interop
 {
-    class IoCtl
+    public static class IoCtl
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr CreateFile(
@@ -31,5 +31,19 @@ namespace DFRDisplayUm.Utility.Console.Interop
 
         [DllImport("kernel32.dll")]
         public static extern void CloseHandle(IntPtr hdl);
+
+        public static bool ClearDfrFrameBuffer(IntPtr deviceHandle)
+        {
+            return DeviceIoControl(
+                deviceHandle,
+                DfrHostIo.IOCTL_DFR_CLEAR_FRAMEBUFFER,
+                IntPtr.Zero,
+                0,
+                IntPtr.Zero,
+                0,
+                IntPtr.Zero,
+                IntPtr.Zero
+            );
+        }
     }
 }

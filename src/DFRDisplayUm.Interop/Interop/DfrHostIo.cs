@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace DFRDisplayUm.Utility.Console.Interop
+namespace DFRDisplayUm.Interop
 {
-    class DfrHostIo
+    public static class DfrHostIo
     {
         public const uint IOCTL_DFR_UPDATE_FRAMEBUFFER = 0x8086a004;
         public const uint IOCTL_DFR_CLEAR_FRAMEBUFFER = 0x8086a008;
@@ -11,7 +11,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct DFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER
+    public struct DFR_HOSTIO_UPDATE_FRAMEBUFFER_HEADER
     {
         public ushort BeginX;
         public ushort BeginY;
@@ -21,7 +21,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
         public uint RequireVertFlip;
     }
 
-    class DfrDeviceDiscovery
+    public static class DfrDeviceDiscovery
     {
         public static string FindDfrDevice()
         {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace DFRDisplayUm.Utility.Console.Interop
+namespace DFRDisplayUm.Interop
 {
-    class SetupAPI
+    public static class SetupAPI
     {
         public const int DIGCF_DEFAULT = 0x1;
         public const int DIGCF_PRESENT = 0x2;
@@ -20,7 +20,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
         );
 
         [DllImport("setupapi.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        public static extern Boolean SetupDiEnumDeviceInterfaces(
+        public static extern bool SetupDiEnumDeviceInterfaces(
             IntPtr hDevInfo,
             IntPtr devInfo,
             ref Guid interfaceClassGuid,
@@ -40,7 +40,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct SP_DEVICE_INTERFACE_DATA
+    public struct SP_DEVICE_INTERFACE_DATA
     {
         public int cbSize;
         public Guid interfaceClassGuid;
@@ -49,7 +49,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    struct SP_DEVINFO_DATA
+    public struct SP_DEVINFO_DATA
     {
         public int cbSize;
         public Guid ClassGuid;
@@ -58,7 +58,7 @@ namespace DFRDisplayUm.Utility.Console.Interop
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    struct SP_DEVICE_INTERFACE_DETAIL_DATA
+    public struct SP_DEVICE_INTERFACE_DETAIL_DATA
     {
         public int cbSize;
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]

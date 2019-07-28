@@ -1,8 +1,8 @@
-﻿using DFRDisplayUm.Utility.Console.Interop;
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
+using DFRDisplayUm.Interop;
 
 namespace DFRDisplayUm.Utility.Console
 {
