@@ -43,7 +43,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interop\DeviceGuids.cs" />
     <Compile Include="Interop\DfrHostIo.cs" />
     <Compile Include="Interop\IoCtl.cs" />
     <Compile Include="Interop\SetupAPI.cs" />

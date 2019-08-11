@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace DFRDisplayUm.Interop
@@ -23,6 +24,8 @@ namespace DFRDisplayUm.Interop
 
     public static class DfrDeviceDiscovery
     {
+        static Guid DfrDisplayInterfaceGuid = Guid.Parse("2003cacd-9e7c-477c-ab06-a5a8bbb1a63e");
+
         public static string FindDfrDevice()
         {
             string instancePath = null;
@@ -30,7 +33,7 @@ namespace DFRDisplayUm.Interop
             uint i = 0;
 
             var h = SetupAPI.SetupDiGetClassDevs(
-                ref DeviceGuids.DfrDisplayInterfaceGuid,
+                ref DfrDisplayInterfaceGuid,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 SetupAPI.DIGCF_PRESENT | SetupAPI.DIGCF_DEVICEINTERFACE
@@ -42,27 +45,42 @@ namespace DFRDisplayUm.Interop
                 while (bResult)
                 {
                     SP_DEVICE_INTERFACE_DATA dia = new SP_DEVICE_INTERFACE_DATA();
-                    dia.cbSize = Marshal.SizeOf(dia);
+                    dia.cbSize = (uint)Marshal.SizeOf(dia);
 
                     bResult = SetupAPI.SetupDiEnumDeviceInterfaces(h, IntPtr.Zero,
-                        ref DeviceGuids.DfrDisplayInterfaceGuid, i, ref dia);
+                        ref DfrDisplayInterfaceGuid, i, dia);
                     if (bResult)
                     {
                         SP_DEVINFO_DATA da = new SP_DEVINFO_DATA();
-                        da.cbSize = Marshal.SizeOf(da);
+                        da.cbSize = (uint)Marshal.SizeOf(da);
 
-                        SP_DEVICE_INTERFACE_DETAIL_DATA didd = new SP_DEVICE_INTERFACE_DETAIL_DATA
+                        if (!SetupAPI.SetupDiGetDeviceInterfaceDetail(h, dia, IntPtr.Zero, 0, out uint nRequiredSize, null))
                         {
-                            cbSize = 4 + Marshal.SystemDefaultCharSize // trust me :)
-                        };
+                            // ERROR_INSUFFICIENT_BUFFER 
+                            if (Marshal.GetLastWin32Error() != 122)
+                            {
+                                throw new Win32Exception(Marshal.GetLastWin32Error());
+                            }
 
-                        uint nRequiredSize = 0;
-                        uint nBytes = 260;
-                        if (SetupAPI.SetupDiGetDeviceInterfaceDetail(h, ref dia, ref didd, nBytes,
-                            ref nRequiredSize, ref da))
-                        {
-                            instancePath = didd.DevicePath;
-                            break;
+                            var deviceInterfaceDetailData = Marshal.AllocHGlobal((int)nRequiredSize);
+
+                            try
+                            {
+                                Marshal.WriteInt32(deviceInterfaceDetailData,
+                                    (IntPtr.Size == 4) ? (4 + Marshal.SystemDefaultCharSize) : 8);
+                                if (!SetupAPI.SetupDiGetDeviceInterfaceDetail(h, dia,
+                                    deviceInterfaceDetailData, nRequiredSize, out uint _, null))
+                                {
+                                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                                }
+
+                                IntPtr pDevicePathName = new IntPtr(deviceInterfaceDetailData.ToInt64() + 4);
+                                return Marshal.PtrToStringAuto(pDevicePathName);
+                            }
+                            finally
+                            {
+                                Marshal.FreeHGlobal(deviceInterfaceDetailData);
+                            }
                         }
                     }
 
