@@ -47,6 +47,7 @@ DFRDisplayKmCreateDevice(
 		KeQueryPerformanceCounter(&PerfCounter);
 		deviceContext->CurrentFrameId = (((PerfCounter.QuadPart >> 32) >> 16) >> 8);
 		deviceContext->DeviceReady = FALSE;
+		deviceContext->DeviceScreenCleared = FALSE;
 
         //
         // Create a device interface so that applications can find and talk
@@ -364,8 +365,11 @@ get_info:
 	// The iBridge Display is now ready to receive FrameBuffer updates.
 	pDeviceContext->DeviceReady = TRUE;
 
-	// Clear the FrameBuffer
-	Status = DFRDisplayClear(Device);
+	// Clear the FrameBuffer if necessary
+	if (!pDeviceContext->DeviceScreenCleared) {
+		Status = DFRDisplayClear(Device);
+		pDeviceContext->DeviceScreenCleared = TRUE;
+	}
 
 exit:
 	return Status;

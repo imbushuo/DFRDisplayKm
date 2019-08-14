@@ -20,6 +20,7 @@ typedef struct _DEVICE_CONTEXT
 	UINT32 FrameBufferPixelFormat;
 	BOOLEAN DeviceReady;
 	UINT8 CurrentFrameId;
+	BOOLEAN DeviceScreenCleared;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 //
