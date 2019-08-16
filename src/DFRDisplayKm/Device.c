@@ -48,6 +48,7 @@ DFRDisplayKmCreateDevice(
 		deviceContext->CurrentFrameId = (((PerfCounter.QuadPart >> 32) >> 16) >> 8);
 		deviceContext->DeviceReady = FALSE;
 		deviceContext->DeviceScreenCleared = FALSE;
+		deviceContext->FnKeyPressed = FALSE;
 
         //
         // Create a device interface so that applications can find and talk
@@ -65,6 +66,15 @@ DFRDisplayKmCreateDevice(
             //
             status = DFRDisplayKmQueueInitialize(device);
         }
+
+		//
+		// Create a DOS alias for the keyboard driver
+		//
+		DECLARE_CONST_UNICODE_STRING(DfrDosDeviceName, DOS_DEVICE_NAME);
+		status = WdfDeviceCreateSymbolicLink(
+			device,
+			&DfrDosDeviceName
+		);
     }
 
     return status;
@@ -392,4 +402,14 @@ DFRDisplayEvtDeviceD0Exit(
 	pDeviceContext->DeviceReady = FALSE;
 
 	return STATUS_SUCCESS;
+}
+
+VOID
+DFRDisplaySetFnStatus(
+	_In_ WDFDEVICE Device,
+	_In_ BOOLEAN IsFnPressed
+)
+{
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
+	pDeviceContext->FnKeyPressed = IsFnPressed;
 }

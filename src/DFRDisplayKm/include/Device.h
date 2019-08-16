@@ -21,7 +21,13 @@ typedef struct _DEVICE_CONTEXT
 	BOOLEAN DeviceReady;
 	UINT8 CurrentFrameId;
 	BOOLEAN DeviceScreenCleared;
+	BOOLEAN FnKeyPressed;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
+
+//
+// DFR compat
+//
+#define DOS_DEVICE_NAME  L"\\DosDevices\\AppleDFR"
 
 //
 // Our pool tag (T,B,A,R)
@@ -109,6 +115,15 @@ DFRDisplayHandleUsermodeBufferTransfer(
 PCHAR
 DbgDevicePowerString(
 	_In_ WDF_POWER_DEVICE_STATE Type
+);
+
+//
+// Functions for handling Fn key
+//
+VOID
+DFRDisplaySetFnStatus(
+	_In_ WDFDEVICE Device,
+	_In_ BOOLEAN IsFnPressed
 );
 
 EXTERN_C_END

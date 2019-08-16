@@ -73,6 +73,16 @@ DFRDisplayKmEvtIoDeviceControl(
 			Device
 		);
 		break;
+	case IOCTL_DFR_KBD_FN_PRESSED:
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_QUEUE, "Fn key pressed");
+		DFRDisplaySetFnStatus(Device, TRUE);
+		Status = STATUS_SUCCESS;
+		break;
+	case IOCTL_DFR_KBD_FN_RELEASED:
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_QUEUE, "Fn key released");
+		DFRDisplaySetFnStatus(Device, FALSE);
+		Status = STATUS_SUCCESS;
+		break;
 	default:
 		Status = STATUS_NOT_SUPPORTED;
 		break;
