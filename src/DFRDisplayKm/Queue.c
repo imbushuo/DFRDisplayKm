@@ -34,11 +34,26 @@ DFRDisplayKmQueueInitialize(
 		&queue
 	);
 
-    if( !NT_SUCCESS(status) ) {
+    if(!NT_SUCCESS(status)) {
         TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE, 
 			"WdfIoQueueCreate failed %!STATUS!", status);
         return status;
     }
+
+	WDF_IO_QUEUE_CONFIG_INIT(&queueConfig, WdfIoQueueDispatchManual);
+	queueConfig.PowerManaged = WdfFalse;
+
+	status = WdfIoQueueCreate(
+		Device,
+		&queueConfig,
+		WDF_NO_OBJECT_ATTRIBUTES,
+		&pDeviceContext->FnKeyStatusQueue
+	);
+
+	if (!NT_SUCCESS(status)) {
+		TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE,
+			"WdfIoQueueCreate failed %!STATUS!", status);
+	}
 
     return status;
 }
@@ -56,7 +71,9 @@ DFRDisplayKmEvtIoDeviceControl(
 	UNREFERENCED_PARAMETER(OutputBufferLength);
 
 	NTSTATUS Status;
+
 	WDFDEVICE Device = WdfIoQueueGetDevice(Queue);
+	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
 	BOOLEAN RequestPending = FALSE;
 
 	switch (IoControlCode) {
@@ -83,8 +100,22 @@ DFRDisplayKmEvtIoDeviceControl(
 		DFRDisplaySetFnStatus(Device, FALSE);
 		Status = STATUS_SUCCESS;
 		break;
+	case IOCTL_DFR_QUERY_FN_KEY:
+		Status = WdfRequestForwardToIoQueue(
+			Request,
+			pDeviceContext->FnKeyStatusQueue
+		);
+		if (!NT_SUCCESS(Status)) {
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_QUEUE,
+				"WdfRequestForwardToIoQueue failed %!STATUS!", Status);
+			WdfRequestComplete(Request, Status);
+		} else {
+			RequestPending = TRUE;
+		}
+		break;
 	default:
 		Status = STATUS_NOT_SUPPORTED;
+		TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_QUEUE, "Unsupported IOCTL");
 		break;
 	}
 

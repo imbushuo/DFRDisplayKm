@@ -391,6 +391,8 @@ DFRDisplayEvtDeviceD0Exit(
 	_In_ WDF_POWER_DEVICE_STATE TargetState
 )
 {
+	NTSTATUS Status = STATUS_SUCCESS;
+	WDFREQUEST OutstandingRequest;
 	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
 
 	TraceEvents(
@@ -398,6 +400,18 @@ DFRDisplayEvtDeviceD0Exit(
 		"%!FUNC! -->AmtPtpDeviceEvtDeviceD0Exit - moving to %s",
 		DbgDevicePowerString(TargetState)
 	);
+
+	// Cancel all outstanding requests
+	while (NT_SUCCESS(Status)) {
+		Status = WdfIoQueueRetrieveNextRequest(
+			pDeviceContext->FnKeyStatusQueue,
+			&OutstandingRequest
+		);
+
+		if (NT_SUCCESS(Status)) {
+			WdfRequestComplete(OutstandingRequest, STATUS_CANCELLED);
+		}
+	}
 
 	pDeviceContext->DeviceReady = FALSE;
 
@@ -410,6 +424,58 @@ DFRDisplaySetFnStatus(
 	_In_ BOOLEAN IsFnPressed
 )
 {
+	NTSTATUS ReqStatus = STATUS_SUCCESS;
 	PDEVICE_CONTEXT pDeviceContext = DeviceGetContext(Device);
+	DFR_HOSTIO_FN_KEY_STATUS KeyStatusReport;
+
 	pDeviceContext->FnKeyPressed = IsFnPressed;
+	KeyStatusReport.FnKeyPressed = IsFnPressed;
+
+	// Process all pending requests
+	while (NT_SUCCESS(ReqStatus)) {
+		WDFREQUEST FnStatusRequest;
+		WDFMEMORY FnStatusMemory;
+		NTSTATUS Status = STATUS_SUCCESS;
+
+		ReqStatus = WdfIoQueueRetrieveNextRequest(
+			pDeviceContext->FnKeyStatusQueue,
+			&FnStatusRequest
+		);
+
+		if (!NT_SUCCESS(ReqStatus)) {
+			// Probably no more request exists
+			break;
+		}
+
+		Status = WdfRequestRetrieveOutputMemory(
+			FnStatusRequest,
+			&FnStatusMemory
+		);
+
+		if (!NT_SUCCESS(Status)) {
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DRIVER,
+				"%!FUNC! WdfRequestRetrieveOutputMemory failed with %!STATUS!", Status
+			);
+			goto req_continue;
+		}
+
+		Status = WdfMemoryCopyFromBuffer(
+			FnStatusMemory,
+			0,
+			(PVOID) &KeyStatusReport,
+			sizeof(KeyStatusReport)
+		);
+
+		if (!NT_SUCCESS(Status)) {
+			TraceEvents(TRACE_LEVEL_ERROR, TRACE_DRIVER,
+				"%!FUNC! WdfMemoryCopyFromBuffer failed with %!STATUS!", Status
+			);
+			goto req_continue;
+		}
+
+		WdfRequestSetInformation(FnStatusRequest, sizeof(KeyStatusReport));
+
+	req_continue:
+		WdfRequestComplete(FnStatusRequest, Status);
+	}
 }

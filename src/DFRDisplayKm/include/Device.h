@@ -22,6 +22,9 @@ typedef struct _DEVICE_CONTEXT
 	UINT8 CurrentFrameId;
 	BOOLEAN DeviceScreenCleared;
 	BOOLEAN FnKeyPressed;
+
+	// Fn key queue
+	WDFQUEUE FnKeyStatusQueue;
 } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
 //
