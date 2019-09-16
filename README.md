@@ -1,8 +1,13 @@
 # Touch Bar (DFR) Display Driver for Windows
 
 This driver implements custom display functionality for Apple Touch Bar (DFR)
-on Windows 10. Touch feedback has not yet been discovered but should be quite
-easy since it is a HID device.
+on Windows 10. Touch Bar is a USB composite device with two configurations.
+The first configuration implements basic function and media key input. 
+Windows always takes the first configuration by default.
+
+With [proper configuration](https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/selecting-the-configuration-for-a-multiple-interface--composite--usb-d) in the USB composite device driver stack, it is possible to select the second configuration for achieving advanced display and input functionalities.
+
+This driver implements the display (iBridge Display). The composition device also exposes a HID-compliant Touch Pad (actually, a Touch Screen). It does report Y-axis data but such data are useless due to the form factor of Touch Bar. For more information about the HID digitizer, see [DFRContentHost](https://github.com/imbushuo/DFRContentHost/blob/master/Avalonia.DfrFrameBuffer/Digitizer.cs) for further details.
 
 ## Motivation
 
